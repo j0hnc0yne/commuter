@@ -1,4 +1,4 @@
-# Commute Planner
+# [Commute Planner](https://j0hnc0yne.github.io/commuter/)
 
 A static page that compares weekday Metra commutes from home (Wauconda) to work (77 W. Wacker) through three nearby stations:
 
