@@ -45,7 +45,7 @@
   h1 { font-size: 1.5rem; margin: 0 0 4px; }
   .sub { color: var(--muted); margin: 0 0 16px; font-size: .95rem; }
 
-  .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
   .chip {
     --c: var(--muted);
     display: inline-flex; align-items: center; gap: 8px;
@@ -60,8 +60,22 @@
   .chip[aria-pressed="false"] { opacity: .6; }
   .chip[aria-pressed="false"] .dot { background: transparent; border: 2px solid var(--c); }
 
+  .tabs {
+    position: sticky; top: 0; z-index: 2;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+    margin: 0 -16px 16px; padding: 8px 16px;
+    background: var(--bg); border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    min-height: 44px; padding: 0 12px;
+    border: 1px solid var(--border); border-radius: 10px;
+    background: var(--surface); color: var(--muted);
+    font: inherit; font-weight: 700; cursor: pointer;
+  }
+  .tab[aria-selected="true"] { background: var(--text); color: var(--surface); border-color: var(--text); }
+  .tab .count { font-weight: 500; opacity: .75; }
+
   section { margin-bottom: 32px; }
-  h2 { font-size: 1.2rem; margin: 0 0 2px; }
   .window { color: var(--muted); font-size: .9rem; margin: 0 0 10px; }
 
   table {
@@ -116,8 +130,12 @@
 
   <div class="filters" id="filters" role="group" aria-label="Filter train lines"></div>
 
-  <section>
-    <h2>To Work</h2>
+  <div class="tabs" role="tablist" aria-label="Direction">
+    <button type="button" class="tab" role="tab" id="tabWork" data-hash="work" aria-controls="panelWork">To Work <span class="count" id="countWork"></span></button>
+    <button type="button" class="tab" role="tab" id="tabHome" data-hash="home" aria-controls="panelHome">To Home <span class="count" id="countHome"></span></button>
+  </div>
+
+  <section id="panelWork" role="tabpanel" aria-labelledby="tabWork">
     <p class="window" id="toWorkWindow"></p>
     <table>
       <thead><tr>
@@ -127,8 +145,7 @@
     </table>
   </section>
 
-  <section>
-    <h2>To Home</h2>
+  <section id="panelHome" role="tabpanel" aria-labelledby="tabHome">
     <p class="window" id="toHomeWindow"></p>
     <table>
       <thead><tr>
@@ -203,7 +220,7 @@
     const visible = rows.filter((r) => enabled[r.key]);
     if (!visible.length) {
       tbody.innerHTML = '<tr class="empty"><td colspan="6">No trains match — turn on a line above.</td></tr>';
-      return;
+      return 0;
     }
     const fastest = Math.min(...visible.map((r) => r.end - r.start));
     for (const r of visible) {
@@ -222,12 +239,47 @@
       );
       tbody.append(tr);
     }
+    return visible.length;
   }
 
   function render() {
-    renderTable("toWork", trips.toWork, ["Leave Home", "Train Departs", "Train Arrives", "Arrive Work", "Total Time"]);
-    renderTable("toHome", trips.toHome, ["Leave Work", "Train Departs", "Train Arrives", "Arrive Home", "Total Time"]);
+    const nWork = renderTable("toWork", trips.toWork, ["Leave Home", "Train Departs", "Train Arrives", "Arrive Work", "Total Time"]);
+    const nHome = renderTable("toHome", trips.toHome, ["Leave Work", "Train Departs", "Train Arrives", "Arrive Home", "Total Time"]);
+    document.getElementById("countWork").textContent = `· ${nWork}`;
+    document.getElementById("countHome").textContent = `· ${nHome}`;
   }
+
+  // Direction tabs: a #work / #home bookmark wins; otherwise mornings open To Work, afternoons To Home.
+  // Taps aren't saved anywhere (not even the URL), so the next visit picks by time of day again.
+  const tabs = [document.getElementById("tabWork"), document.getElementById("tabHome")];
+  const byClock = () => (new Date().getHours() < 12 ? tabs[0] : tabs[1]);
+  function selectTab(tab, focus) {
+    for (const t of tabs) {
+      const on = t === tab;
+      t.setAttribute("aria-selected", String(on));
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
+    }
+    if (focus) tab.focus();
+  }
+  for (const t of tabs) {
+    t.addEventListener("click", () => selectTab(t));
+    t.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      selectTab(tabs[(tabs.indexOf(t) + 1) % tabs.length], true);
+    });
+  }
+  const fromHash = tabs.find((t) => `#${t.dataset.hash}` === location.hash);
+  let autoTab = byClock();
+  selectTab(fromHash || autoTab);
+  // A phone tab left open since the morning: switch to To Home once it's afternoon (taps within the
+  // same half of the day are left alone).
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden || fromHash || byClock() === autoTab) return;
+    autoTab = byClock();
+    selectTab(autoTab);
+  });
 
   // Filter chips
   const filters = document.getElementById("filters");
