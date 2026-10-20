@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Commute Planner</title>
+<meta name="description" content="Weekday Metra options from Wauconda to 77 W. Wacker via Mundelein (NCS), Prairie Crossing (MD-N) and Barrington (UP-NW).">
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --text: #1b1f24;
+    --muted: #5d6673;
+    --border: #dfe3e8;
+    --fast-bg: #fff8db;
+    --fast-text: #6b5200;
+    --NCS: #7B3F98;
+    --MDN: #D9661A;
+    --UPNW: #00843D;
+    --on-line: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111418;
+      --surface: #1a1e24;
+      --text: #e8ebef;
+      --muted: #9aa4b1;
+      --border: #2c333c;
+      --fast-bg: #3a3214;
+      --fast-text: #f3d77a;
+      --NCS: #B58AD0;
+      --MDN: #F2954F;
+      --UPNW: #4CC07E;
+      --on-line: #111418;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 20px 16px 40px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 16px; font-size: .95rem; }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .chip {
+    --c: var(--muted);
+    display: inline-flex; align-items: center; gap: 8px;
+    min-height: 44px; padding: 0 16px;
+    border: 2px solid var(--c); border-radius: 999px;
+    background: var(--surface); color: var(--text);
+    font: inherit; font-weight: 600; cursor: pointer;
+  }
+  .chip .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--c); }
+  .chip[aria-pressed="true"] { background: var(--c); color: var(--on-line); }
+  .chip[aria-pressed="true"] .dot { background: var(--on-line); }
+  .chip[aria-pressed="false"] { opacity: .6; }
+  .chip[aria-pressed="false"] .dot { background: transparent; border: 2px solid var(--c); }
+
+  section { margin-bottom: 32px; }
+  h2 { font-size: 1.2rem; margin: 0 0 2px; }
+  .window { color: var(--muted); font-size: .9rem; margin: 0 0 10px; }
+
+  table {
+    width: 100%; border-collapse: collapse;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    overflow: hidden; font-variant-numeric: tabular-nums;
+  }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr td:first-child { border-left: 5px solid var(--c); }
+  tr.fast { background: var(--fast-bg); }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 6px;
+    background: var(--c); color: var(--on-line); font-weight: 700; font-size: .8rem;
+  }
+  .train { color: var(--muted); font-size: .85rem; margin-left: 6px; }
+  .total { font-weight: 700; }
+  .tag { margin-left: 6px; font-size: .75rem; font-weight: 700; color: var(--fast-text); }
+  .empty td { text-align: center; color: var(--muted); border-left: 0 !important; padding: 20px; }
+
+  footer { color: var(--muted); font-size: .85rem; border-top: 1px solid var(--border); padding-top: 12px; }
+  footer p { margin: 4px 0; }
+
+  /* Phones: each row becomes a card */
+  @media (max-width: 600px) {
+    table, tbody { display: block; border: 0; background: none; }
+    thead { display: none; }
+    tbody tr {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 5px solid var(--c); border-radius: 10px;
+      padding: 12px; margin-bottom: 10px;
+    }
+    tbody tr.fast { background: var(--fast-bg); }
+    tbody tr td, tbody tr td:first-child { border: 0; padding: 0; white-space: normal; }
+    td[data-label]::before {
+      content: attr(data-label); display: block;
+      font-size: .72rem; text-transform: uppercase; letter-spacing: .03em; color: var(--muted);
+    }
+    td.line { grid-column: 1 / -1; }
+    td.line::before { display: none; }
+    .empty { display: block; }
+    .empty td { display: block; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Commute Planner</h1>
+  <p class="sub">Wauconda ⇄ 77 W. Wacker · weekdays</p>
+
+  <div class="filters" id="filters" role="group" aria-label="Filter train lines"></div>
+
+  <section>
+    <h2>To Work</h2>
+    <p class="window" id="toWorkWindow"></p>
+    <table>
+      <thead><tr>
+        <th>Train Line</th><th>Leave Home</th><th>Train Departs</th><th>Train Arrives</th><th>Arrive Work</th><th>Total Time</th>
+      </tr></thead>
+      <tbody id="toWork"></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>To Home</h2>
+    <p class="window" id="toHomeWindow"></p>
+    <table>
+      <thead><tr>
+        <th>Train Line</th><th>Leave Work</th><th>Train Departs</th><th>Train Arrives</th><th>Arrive Home</th><th>Total Time</th>
+      </tr></thead>
+      <tbody id="toHome"></tbody>
+    </table>
+  </section>
+
+  <footer id="notes"></footer>
+</main>
+
+<script src="data/config.js"></script>
+<script src="data/schedules.js"></script>
+<script>
+(function () {
+  const cfg = window.COMMUTE_CONFIG;
+  const sched = window.SCHEDULES;
+  const STORE_KEY = "commute-lines";
+
+  const toMin = (s) => { const [h, m] = s.split(":").map(Number); return h * 60 + m; };
+  const fmtClock = (min) => {
+    const m = ((min % 1440) + 1440) % 1440;
+    const h = Math.floor(m / 60), mm = String(m % 60).padStart(2, "0");
+    return `${h % 12 || 12}:${mm} ${h < 12 ? "AM" : "PM"}`;
+  };
+  const fmtDur = (min) => (min >= 60 ? `${Math.floor(min / 60)}h ${String(min % 60).padStart(2, "0")}m` : `${min}m`);
+
+  // Which lines are switched on (all by default; remembered per browser)
+  let enabled = Object.fromEntries(Object.keys(cfg.lines).map((k) => [k, true]));
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+    if (saved) Object.keys(enabled).forEach((k) => { if (k in saved) enabled[k] = !!saved[k]; });
+  } catch (e) { /* storage unavailable: keep defaults */ }
+
+  function buildTrips() {
+    const w = cfg.window;
+    const toWork = [], toHome = [];
+    for (const [key, line] of Object.entries(cfg.lines)) {
+      for (const t of sched[key].inbound) {
+        const dep = toMin(t.depart), arr = toMin(t.arrive);
+        const start = dep - line.driveMin - cfg.parkBufferMin, end = arr + line.walkMin;
+        if (start >= toMin(w.toWork.leaveHomeAfter) && end <= toMin(w.toWork.arriveWorkBy)) {
+          toWork.push({ key, train: t.train, start, dep, arr, end });
+        }
+      }
+      for (const t of sched[key].outbound) {
+        const dep = toMin(t.depart), arr = toMin(t.arrive);
+        const start = dep - line.walkMin, end = arr + line.driveMin;
+        if (start >= toMin(w.toHome.leaveWorkAfter) && end <= toMin(w.toHome.arriveHomeBy)) {
+          toHome.push({ key, train: t.train, start, dep, arr, end });
+        }
+      }
+    }
+    const byDep = (a, b) => a.dep - b.dep || a.start - b.start;
+    return { toWork: toWork.sort(byDep), toHome: toHome.sort(byDep) };
+  }
+
+  const trips = buildTrips();
+
+  function cell(label, html, cls) {
+    const td = document.createElement("td");
+    if (label) td.dataset.label = label;
+    if (cls) td.className = cls;
+    td.innerHTML = html;
+    return td;
+  }
+
+  function renderTable(tbodyId, rows, labels) {
+    const tbody = document.getElementById(tbodyId);
+    tbody.innerHTML = "";
+    const visible = rows.filter((r) => enabled[r.key]);
+    if (!visible.length) {
+      tbody.innerHTML = '<tr class="empty"><td colspan="6">No trains match — turn on a line above.</td></tr>';
+      return;
+    }
+    const fastest = Math.min(...visible.map((r) => r.end - r.start));
+    for (const r of visible) {
+      const line = cfg.lines[r.key];
+      const tr = document.createElement("tr");
+      tr.style.setProperty("--c", `var(--${r.key})`);
+      const total = r.end - r.start;
+      if (total === fastest) tr.className = "fast";
+      tr.append(
+        cell(null, `<span class="badge">${line.short}</span><span class="train">#${r.train} · ${line.station}</span>`, "line"),
+        cell(labels[0], fmtClock(r.start)),
+        cell(labels[1], fmtClock(r.dep)),
+        cell(labels[2], fmtClock(r.arr)),
+        cell(labels[3], fmtClock(r.end)),
+        cell(labels[4], fmtDur(total) + (total === fastest ? '<span class="tag">FASTEST</span>' : ""), "total")
+      );
+      tbody.append(tr);
+    }
+  }
+
+  function render() {
+    renderTable("toWork", trips.toWork, ["Leave Home", "Train Departs", "Train Arrives", "Arrive Work", "Total Time"]);
+    renderTable("toHome", trips.toHome, ["Leave Work", "Train Departs", "Train Arrives", "Arrive Home", "Total Time"]);
+  }
+
+  // Filter chips
+  const filters = document.getElementById("filters");
+  for (const [key, line] of Object.entries(cfg.lines)) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip";
+    b.style.setProperty("--c", `var(--${key})`);
+    b.setAttribute("aria-pressed", String(enabled[key]));
+    b.title = `${line.name} — ${line.station}`;
+    b.innerHTML = `<span class="dot"></span>${line.short}`;
+    b.addEventListener("click", () => {
+      enabled[key] = !enabled[key];
+      b.setAttribute("aria-pressed", String(enabled[key]));
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(enabled)); } catch (e) { /* ignore */ }
+      render();
+    });
+    filters.append(b);
+  }
+
+  const w = cfg.window;
+  document.getElementById("toWorkWindow").textContent =
+    `Leave home after ${fmtClock(toMin(w.toWork.leaveHomeAfter))}, arrive by ${fmtClock(toMin(w.toWork.arriveWorkBy))}`;
+  document.getElementById("toHomeWindow").textContent =
+    `Leave work after ${fmtClock(toMin(w.toHome.leaveWorkAfter))}, home by ${fmtClock(toMin(w.toHome.arriveHomeBy))}`;
+
+  const assumptions = Object.values(cfg.lines)
+    .map((l) => `${l.short}: ${l.driveMin} min drive to ${l.station}, ${l.walkMin} min walk from ${l.terminal}`)
+    .join(" · ");
+  document.getElementById("notes").innerHTML =
+    `<p><strong>Assumptions:</strong> ${assumptions} · plus ${cfg.parkBufferMin} min to park in the morning.</p>` +
+    `<p>Metra weekday schedules, downloaded ${window.SCHEDULE_INFO.downloaded}. Times can change, so check metra.com before you go.</p>`;
+
+  render();
+})();
+</script>
+</body>
+</html>
