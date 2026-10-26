@@ -252,10 +252,13 @@
     document.getElementById("countHome").textContent = `· ${nHome}`;
   }
 
-  // Direction tabs: a #work / #home bookmark wins; otherwise mornings open To Work, afternoons To Home.
+  // Direction tabs: a #work / #home bookmark wins; otherwise 12–6 PM opens To Home, any other time To Work.
   // Taps aren't saved anywhere (not even the URL), so the next visit picks by time of day again.
   const tabs = [document.getElementById("tabWork"), document.getElementById("tabHome")];
-  const byClock = () => (new Date().getHours() < 12 ? tabs[0] : tabs[1]);
+  const byClock = () => {
+    const h = new Date().getHours();
+    return h >= 12 && h < 18 ? tabs[1] : tabs[0];
+  };
   function selectTab(tab, focus) {
     for (const t of tabs) {
       const on = t === tab;
@@ -276,8 +279,8 @@
   const fromHash = tabs.find((t) => `#${t.dataset.hash}` === location.hash);
   let autoTab = byClock();
   selectTab(fromHash || autoTab);
-  // A phone tab left open since the morning: switch to To Home once it's afternoon (taps within the
-  // same half of the day are left alone).
+  // A phone tab left open across a boundary: switch to To Home at noon and back to To Work at 6 PM
+  // (taps within the same time window are left alone).
   document.addEventListener("visibilitychange", () => {
     if (document.hidden || fromHash || byClock() === autoTab) return;
     autoTab = byClock();

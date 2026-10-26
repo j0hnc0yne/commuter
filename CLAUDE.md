@@ -27,7 +27,7 @@ Three files are loaded in order by `index.html` as plain `<script>` tags that se
   - To Work: leave home = depart − `driveMin` − `parkBufferMin`; arrive work = arrive + `walkMin`.
   - To Home: leave work = depart − `walkMin`; arrive home = arrive + `driveMin` (no park buffer).
   - A trip is kept only if it fits entirely within the configured window. The fastest visible row is highlighted.
-  - Line toggle state is saved in `localStorage` (`commute-lines`). The To Work / To Home tab comes from a `#work`/`#home` hash, or else the time of day (before noon → To Work). It also re-evaluates on `visibilitychange`.
+  - Line toggle state is saved in `localStorage` (`commute-lines`). The To Work / To Home tab comes from a `#work`/`#home` hash, or else the time of day (12:00–17:59 → To Home, any other time → To Work). It also re-evaluates on `visibilitychange`.
 
 Line keys (`NCS`, `MDN`, `UPNW`) are shared across files and must match: `COMMUTE_CONFIG.lines`, `SCHEDULES`, the `LINES` dict in `update_schedules.py`, and the CSS color variables `--NCS`/`--MDN`/`--UPNW` in `index.html`. Station names in the script's `LINES` must match the PDF's spelling (e.g. `"Ogilvie (OTC)"`), which can differ from the display names in `config.js`.
 
