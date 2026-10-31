@@ -3,9 +3,9 @@
 // Line colors live in index.html (CSS variables --NCS, --MDN, --UPNW).
 window.COMMUTE_CONFIG = {
   lines: {
-    NCS:  { name: "North Central Service",   short: "NCS",   station: "Mundelein",        terminal: "Union Station", driveMin: 15, walkMin: 19 },
-    MDN:  { name: "Milwaukee District North", short: "MD-N",  station: "Prairie Crossing", terminal: "Union Station", driveMin: 13, walkMin: 19 },
-    UPNW: { name: "Union Pacific Northwest",  short: "UP-NW", station: "Barrington",       terminal: "Ogilvie", driveMin: 23, walkMin: 17 }
+    NCS:  { name: "North Central Service",   short: "NCS",   station: "Mundelein",        terminal: "Union Station", driveMin: 15, walkMin: 18 },
+    MDN:  { name: "Milwaukee District North", short: "MD-N",  station: "Prairie Crossing", terminal: "Union Station", driveMin: 13, walkMin: 18 },
+    UPNW: { name: "Union Pacific Northwest",  short: "UP-NW", station: "Barrington",       terminal: "Ogilvie", driveMin: 23, walkMin: 15 }
   },
   parkBufferMin: 5, // park the car and get to the platform (morning only)
   window: {
